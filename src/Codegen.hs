@@ -30,7 +30,7 @@ import qualified LLVM.AST.FloatingPointPredicate as FP
 -------------------------------------------------------------------------------
 
 newtype LLVM a = LLVM (State AST.Module a)
-  deriving (Functor, Applicative, Monad, MonadState AST.Module )
+  deriving (Functor, Applicative, Monad, MonadState AST.Module)
 
 runLLVM :: AST.Module -> LLVM a -> AST.Module
 runLLVM mod (LLVM m) = execState m mod
@@ -127,10 +127,10 @@ createBlocks :: CodegenState -> [BasicBlock]
 createBlocks m = map makeBlock $ sortBlocks $ Map.toList (blocks m)
 
 makeBlock :: (Name, BlockState) -> BasicBlock
-makeBlock (l, (BlockState _ s t)) = BasicBlock l (reverse s) (maketerm t)
+makeBlock (l, BlockState _ s t) = BasicBlock l (reverse s) (maketerm t)
   where
     maketerm (Just x) = x
-    maketerm Nothing = error $ "Block has no terminator: " ++ (show l)
+    maketerm Nothing = error $ "Block has no terminator: " ++ show l
 
 entryBlockName :: ShortByteString
 entryBlockName = "entry"
@@ -150,10 +150,10 @@ fresh = do
   modify $ \s -> s { count = 1 + i }
   return $ i + 1
 
-instr :: Type -> Instruction -> Codegen (Operand)
+instr :: Type -> Instruction -> Codegen Operand
 instr ty ins = do
   n <- fresh
-  let ref = (UnName n)
+  let ref = UnName n
   blk <- current
   let i = stack blk
   modifyBlock (blk { stack = (ref := ins) : i } )
@@ -213,7 +213,7 @@ current = do
 assign :: ShortByteString -> Operand -> Codegen ()
 assign var x = do
   lcls <- gets symtab
-  modify $ \s -> s { symtab = [(var, x)] ++ lcls }
+  modify $ \s -> s { symtab = (var, x) : lcls }
 
 getvar :: ShortByteString -> Codegen Operand
 getvar var = do

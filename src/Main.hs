@@ -1,9 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
-import JIT
+
 import Codegen
+
 import qualified LLVM.AST as AST
 import qualified LLVM.AST.Float as F
 import qualified LLVM.AST.Constant as C
+import LLVM.AST.Global as G
+import LLVM.Module
+import LLVM.Context
+
+import Data.ByteString.Char8 as BS
 
 {-
 
@@ -17,19 +23,19 @@ entry:
 
 -}
 
-initModule :: AST.Module
-initModule = emptyModule "my cool jit"
-
 logic :: LLVM ()
-logic = do
+logic =
   define double "main" [] $ do
-    let a = cons $ C.Float (F.Double 10)
-    let b = cons $ C.Float (F.Double 20)
+    let a = Codegen.cons $ C.Float (F.Double 10)
+    let b = Codegen.cons $ C.Float (F.Double 20)
     res <- fadd a b
     ret res
 
-main :: IO AST.Module
-main = do
-  let ast = runLLVM initModule logic
-  rc <- runJIT ast
-  return ast
+
+toLLVM :: AST.Module -> IO ()
+toLLVM mod = withContext $ \ctx -> do
+  llvm <- withModuleFromAST ctx mod moduleLLVMAssembly
+  BS.putStrLn llvm
+
+main :: IO ()
+main = toLLVM $ runLLVM AST.defaultModule logic
