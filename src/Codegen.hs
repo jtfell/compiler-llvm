@@ -1,3 +1,11 @@
+--
+-- Codegen.hs - Pure code generation logic to build the LLVM AST.
+--
+-- Defines a LLVM monad that is used as an AST builder, exporting a "runLLVM" function
+-- for actually generating the AST.Module type and helper functions for adding individual
+-- constructs in the AST.
+--
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
@@ -150,6 +158,7 @@ fresh = do
   modify $ \s -> s { count = 1 + i }
   return $ i + 1
 
+-- Pushes a non-terminating instruction onto ???
 instr :: Type -> Instruction -> Codegen Operand
 instr ty ins = do
   n <- fresh
@@ -159,6 +168,7 @@ instr ty ins = do
   modifyBlock (blk { stack = (ref := ins) : i } )
   return $ local ty ref
 
+-- Pushes a terminating instruction onto ???
 terminator :: Named Terminator -> Codegen (Named Terminator)
 terminator trm = do
   blk <- current

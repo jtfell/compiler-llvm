@@ -1,3 +1,7 @@
+--
+-- Main.hs - Top-level program for using the codegen infrastructure
+--
+
 {-# LANGUAGE OverloadedStrings #-}
 
 import Codegen
@@ -11,27 +15,25 @@ import LLVM.Context
 
 import Data.ByteString.Char8 as BS
 
-{-
-
-; ModuleID = 'my cool jit'
-
-define double @main() {
-entry:
-  %1 = fadd double 1.000000e+01, 2.000000e+01
-  ret double %1
-}
-
--}
-
+-- An example program to generate code for
 logic :: LLVM ()
-logic =
+logic = do
+
+  -- Define an external fn
+  add2 <- external double "add_2" [(double, "a")]
+
   define double "main" [] $ do
     let a = Codegen.cons $ C.Float (F.Double 10)
     let b = Codegen.cons $ C.Float (F.Double 20)
-    res <- fadd a b
-    ret res
+    -- Add the 2 constants
+    added <- fadd a b
+    -- Call the external fn on the result of the add operation
+    res <- call (externf double "add_2") [added]
+    -- Return the result
+    ret added
+  
 
-
+-- Use LLVM library to generate LLVM IR and print it out
 toLLVM :: AST.Module -> IO ()
 toLLVM mod = withContext $ \ctx -> do
   llvm <- withModuleFromAST ctx mod moduleLLVMAssembly

@@ -3,14 +3,18 @@ version:             0.1.0.0
 synopsis:            Toy project to get familiar with LLVM API
 license:             MIT
 category:            Compilers
-description:         
-synopsis:            
+homepage:            https://github.com/jtfell/compiler-llvm
 license-file:        LICENSE
 author:              Julian Fell
 maintainer:          julesfell@gmail.com
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
+
+source-repository    head
+  type: git
+  location: git://github.com/jtfell/compiler-llvm.git
+  branch: llvm-4
 
 executable main
   build-depends:       
