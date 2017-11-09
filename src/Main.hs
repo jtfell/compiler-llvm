@@ -20,17 +20,21 @@ logic :: LLVM ()
 logic = do
 
   -- Define an external fn
-  add2 <- external double "add_2" [(double, "a")]
+  external double "add_2" [(double, "a")]
 
   define double "main" [] $ do
+    -- Define 2 constants
     let a = Codegen.cons $ C.Float (F.Double 10)
     let b = Codegen.cons $ C.Float (F.Double 20)
+
     -- Add the 2 constants
     added <- fadd a b
+
     -- Call the external fn on the result of the add operation
     res <- call (externf double "add_2") [added]
+
     -- Return the result
-    ret added
+    ret res
   
 
 -- Use LLVM library to generate LLVM IR and print it out
@@ -40,4 +44,6 @@ toLLVM mod = withContext $ \ctx -> do
   BS.putStrLn llvm
 
 main :: IO ()
-main = toLLVM $ runLLVM AST.defaultModule logic
+main = do
+  let ast = runLLVM AST.defaultModule logic
+  toLLVM ast
