@@ -7,6 +7,7 @@
 import Codegen
 
 import qualified LLVM.AST as AST
+import qualified LLVM.AST.AddrSpace as A
 import qualified LLVM.AST.Float as F
 import qualified LLVM.AST.Constant as C
 import LLVM.AST.Global as G
@@ -19,7 +20,7 @@ import Data.ByteString.Char8 as BS
 logic :: LLVM ()
 logic = do
 
-  -- Define an external fn
+  -- Declare an external fn
   external double "add_2" [(double, "a")]
 
   define double "main" [] $ do
@@ -30,13 +31,16 @@ logic = do
     -- Add the 2 constants
     added <- fadd a b
 
+    -- Define the external function type as Ptr (Fn (Dbl -> Dbl))
+    let fnPtrType = AST.FunctionType double [double] False
+    let ptrType = AST.PointerType fnPtrType (A.AddrSpace 0)
+
     -- Call the external fn on the result of the add operation
-    res <- call (externf double "add_2") [added]
+    res <- call (externf ptrType "add_2") [added]
 
     -- Return the result
     ret res
   
-
 -- Use LLVM library to generate LLVM IR and print it out
 toLLVM :: AST.Module -> IO ()
 toLLVM mod = withContext $ \ctx -> do
@@ -47,3 +51,4 @@ main :: IO ()
 main = do
   let ast = runLLVM AST.defaultModule logic
   toLLVM ast
+
