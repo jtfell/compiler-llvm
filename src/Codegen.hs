@@ -83,6 +83,10 @@ external retty label argtys = addDefn $
 double :: Type
 double = FloatingPointType DoubleFP
 
+-- Integer
+int :: Type
+int = IntegerType 32
+
 void :: Type
 void = AST.VoidType
 
@@ -246,41 +250,41 @@ externf ty nm = ConstantOperand (C.GlobalReference ty nm)
 
 -- Arithmetic and Constants
 fadd :: Operand -> Operand -> Codegen Operand
-fadd a b = instr float $ FAdd NoFastMathFlags a b []
+fadd a b = instr i32 $ FAdd NoFastMathFlags a b []
 
 fsub :: Operand -> Operand -> Codegen Operand
-fsub a b = instr float $ FSub NoFastMathFlags a b []
+fsub a b = instr i32 $ FSub NoFastMathFlags a b []
 
 fmul :: Operand -> Operand -> Codegen Operand
-fmul a b = instr float $ FMul NoFastMathFlags a b []
+fmul a b = instr i32 $ FMul NoFastMathFlags a b []
 
 fdiv :: Operand -> Operand -> Codegen Operand
-fdiv a b = instr float $ FDiv NoFastMathFlags a b []
+fdiv a b = instr i32 $ FDiv NoFastMathFlags a b []
 
 fcmp :: FP.FloatingPointPredicate -> Operand -> Operand -> Codegen Operand
-fcmp cond a b = instr float $ FCmp cond a b []
+fcmp cond a b = instr i32 $ FCmp cond a b []
 
-cons :: C.Constant -> Operand
-cons = ConstantOperand
+constant :: C.Constant -> Operand
+constant = ConstantOperand
 
 uitofp :: Type -> Operand -> Codegen Operand
-uitofp ty a = instr float $ UIToFP a ty []
+uitofp ty a = instr i32 $ UIToFP a ty []
 
 toArgs :: [Operand] -> [(Operand, [A.ParameterAttribute])]
 toArgs = map (\x -> (x, []))
 
 -- Effects
 call :: Operand -> [Operand] -> Codegen Operand
-call fn args = instr float $ Call Nothing CC.C [] (Right fn) (toArgs args) [] []
+call fn args = instr i32 $ Call Nothing CC.C [] (Right fn) (toArgs args) [] []
 
 alloca :: Type -> Codegen Operand
-alloca ty = instr float $ Alloca ty Nothing 0 []
+alloca ty = instr i32 $ Alloca ty Nothing 0 []
 
 store :: Operand -> Operand -> Codegen Operand
-store ptr val = instr float $ Store False ptr val Nothing 0 []
+store ptr val = instr i32 $ Store False ptr val Nothing 0 []
 
 load :: Operand -> Codegen Operand
-load ptr = instr float $ Load False ptr Nothing 0 []
+load ptr = instr i32 $ Load False ptr Nothing 0 []
 
 -- Control Flow
 br :: Name -> Codegen (Named Terminator)
@@ -290,7 +294,7 @@ cbr :: Operand -> Name -> Name -> Codegen (Named Terminator)
 cbr cond tr fl = terminator $ Do $ CondBr cond tr fl []
 
 phi :: Type -> [(Operand, Name)] -> Codegen Operand
-phi ty incoming = instr float $ Phi ty incoming []
+phi ty incoming = instr i32 $ Phi ty incoming []
 
 ret :: Operand -> Codegen (Named Terminator)
 ret val = terminator $ Do $ Ret (Just val) []

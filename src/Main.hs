@@ -21,22 +21,18 @@ logic :: LLVM ()
 logic = do
 
   -- Declare an external fn
-  external double "add_2" [(double, "a")]
+  external int "print_int" [(int, "a")]
 
-  define double "main" [] $ do
-    -- Define 2 constants
-    let a = Codegen.cons $ C.Float (F.Double 10)
-    let b = Codegen.cons $ C.Float (F.Double 20)
+  define int "main" [] $ do
+    -- Define a constant
+    let a = constant $ C.Int 32 10
 
-    -- Add the 2 constants
-    added <- fadd a b
-
-    -- Define the external function type as Ptr (Fn (Dbl -> Dbl))
-    let fnPtrType = AST.FunctionType double [double] False
+    -- Define the external function type as Ptr (Fn (int -> int))
+    let fnPtrType = AST.FunctionType int [int] False
     let ptrType = AST.PointerType fnPtrType (A.AddrSpace 0)
 
-    -- Call the external fn on the result of the add operation
-    res <- call (externf ptrType "add_2") [added]
+    -- Call the external fn (print the int)
+    res <- call (externf ptrType "print_int") [a]
 
     -- Return the result
     ret res

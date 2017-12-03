@@ -1,4 +1,12 @@
+#include <stdio.h>
 
-float add_2(float a) {
-  return 2.0 + a;
+int print_int(int a) {
+  // Simulated failure case
+  if (a > 10) {
+    return 1;
+  }
+
+  // Use the IO function provided by the platform
+  printf("%d", a);
+  return 0;
 }

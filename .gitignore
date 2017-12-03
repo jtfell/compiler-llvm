@@ -11,3 +11,6 @@ includes
 *.epub
 *.agdai
 .stack-work
+
+*.ll
+*.bc
