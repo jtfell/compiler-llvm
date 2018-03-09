@@ -24,6 +24,6 @@ bdescr * alloc_group(int n);
 
 void free_group(bdescr *p);
 void print_state();
-void print_block(bdescr *blk);
+void print_block(bdescr *blk, bool onlyAllocated);
 
 void gc_pool_init();

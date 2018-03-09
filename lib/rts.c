@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 int print_int(int a) {
+ 
   // Simulated failure case
   if (a > 10) {
     return 1;
@@ -10,3 +11,4 @@ int print_int(int a) {
   printf("%d", a);
   return 0;
 }
+
