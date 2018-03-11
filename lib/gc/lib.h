@@ -1,29 +1,23 @@
 #include <stdio.h>
 #include <unistd.h>
 
-/*
- * GARBAGE COLLECTOR
- */
-typedef enum { false, true } bool;
-typedef struct bdescr_ {
+#include "./pool.h"
 
-    // The memory location of the block
-    void *               start;
+typedef struct array_ {
 
-    // The next block in the group (can be null)
-    struct bdescr_ *     link;
+    // The length of the array
+    int               length;
 
-    // Indicate if this block has been allocated
-    bool                 allocated;
-} bdescr;
+    // Pointer to the underlying memory
+    struct bdescr_ *     data;
+} array;
 
 /*
  * Top level API
  */
-bdescr * alloc_group(int n);
+void gc_init();
+void gc_run();
 
-void free_group(bdescr *p);
-void print_state();
-void print_block(bdescr *blk, bool onlyAllocated);
-
-void gc_pool_init();
+array * alloc_array(int length);
+void print_array_data(array * arr);
+void set_array_data(array * arr, int * elems);

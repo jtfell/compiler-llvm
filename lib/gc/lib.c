@@ -1,119 +1,108 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <execinfo.h>
 
 #include "./lib.h"
 
-/*
- * GARBAGE COLLECTOR
- */
 #define BLOCK_SIZE 1024
+#define INTS_PER_BLOCK (BLOCK_SIZE / sizeof(int))
 
-// Direct pointers to memory locations
-void * mappingStartLocation;
-void * mappingCurrentLocation;
-void * allocStartLocation;
-void * allocCurrentLocation;
-void * allocEndLocation;
+void * arrayMap;
 
-/*
- * Top level API
- */
+void print_stack() {
+  void *array[10];
+  size_t size;
 
-void gc_pool_init() {
+  size = backtrace(array, 10);
+  char ** strings = backtrace_symbols(array, size);
 
-  // Allocate space for management struct
-  mappingStartLocation = sbrk(0);
-  sbrk(50 * sizeof(bdescr));
+  printf("Obtained %zd stack frames.\n", size);
 
-  // Get the start address
-  allocStartLocation = sbrk(0);
+  for (size_t i = 0; i < size; i++) {
+    printf("%s - ", strings[i]);
+    printf("%d\n", array[i]);
+  }
 
-  // Allocate a chunk of memory
-  sbrk(50 * BLOCK_SIZE);
-
-  // Get the final address
-  allocEndLocation = sbrk(0);
-
-  printf(
-      "allocated %d memory (%d -> %d)\n ", 
-      (int) (allocEndLocation - allocStartLocation),
-      (int) allocStartLocation,
-      (int) allocEndLocation
-  );
-
-  mappingCurrentLocation = mappingStartLocation;
-  allocCurrentLocation = allocStartLocation;
+  free(strings);
 }
 
-bdescr * alloc_group(int n) {
-  bdescr * blk;
+void gc_init() {
+  arrayMap = sbrk(0);
+  sbrk(50 * sizeof(array));
 
-  // Keep a reference to the first block we're allocating
-  bdescr * firstBlk = (bdescr *) mappingCurrentLocation;
-  bdescr * prevBlk = firstBlk;
+  gc_pool_init();
+  print_stack();
+}
 
-  for (int i = 0; i < n; i++) {
+void gc_run() {
+  printf("stack pointer: %d\n", __builtin_frame_address(0));
+  print_stack();
+}
 
-    // Create a mapping entry
-    blk = (bdescr *) mappingCurrentLocation;
-    mappingCurrentLocation += sizeof(bdescr);
+array * alloc_array(int length) {
+ 
+  // Calculate how many blocks are required for this array
+  size_t blksRequired = ((length * sizeof(int)) / BLOCK_SIZE) + 1;
 
-    blk->allocated = true;
+  // Allocate the memory through the low-level API
+  bdescr * group = alloc_group(blksRequired);
 
-    // Point to the next free block of unallocated space
-    blk->start = allocCurrentLocation;
-    allocCurrentLocation += BLOCK_SIZE;
+  // Find the first non-allocated array in the global arrayMap
+  array * arrP;
+  for (void * p = arrayMap; p < arrayMap + (50 * sizeof(array)); p += sizeof(array)) {
+    arrP = (array *) p;
 
-    // If not the first block in the group, link the previous one to this block
-    if (mappingCurrentLocation != prevBlk) {
-      prevBlk->link = blk;
-    } else {
-      prevBlk->link = NULL;
+    if (arrP->data == NULL) {
+      arrP->data = group;
+      arrP->length = length;
+      break;
     }
 
-    prevBlk = blk;
+    printf("Out of memory!!!\n");
   }
 
-  return firstBlk;
+  return arrP;
 }
 
-void free_group(bdescr *p) {
-  bdescr * blk = p;
+void print_array_data(array * arr) {
+  bdescr * currentBlk = arr->data;
 
-  while(blk->link != NULL) {
-    blk->allocated = false;
-    blk = blk->link;
+  for (int i = 0; i < arr->length; i++) {
+
+    int indexInBlk = i % INTS_PER_BLOCK;
+    
+    int * intBuffer = (int *) currentBlk->start;
+
+    // When at the end of a block, follow the link and start using the next point
+    // printf("%d, %d\n", indexInBlk, INTS_PER_BLOCK);
+    if (indexInBlk == INTS_PER_BLOCK - 1) {
+      printf("%d: %d @ (%d)\n", i, intBuffer[i], &(intBuffer[i]));
+
+      currentBlk = currentBlk->link;
+      if (currentBlk == NULL) {
+        printf("Allocated invalid blk!!!\n");
+      }
+    }
   }
-  blk->allocated = false;
 }
 
-/*
- * Helpers for debugging
- */
-void print_state() {
-  printf("=======================================================\n");
-  printf("Allocation state:\n");
-  printf("       start: %d\n", (int) allocStartLocation);
-  printf("         end: %d\n", (int) allocEndLocation);
-  
-  printf("mappingStart: %d\n", (int) mappingStartLocation);
-  printf(" mappingCurr: %d\n", (int) mappingCurrentLocation);
+void set_array_data(array * arr, int * elems) {
+  bdescr * currentBlk = arr->data;
 
-  printf("allocated blocks:\n");
-  for (void * i = mappingStartLocation; i < mappingCurrentLocation; i += sizeof(bdescr)) {
-    print_block(i, true);
-  }
-  printf("=======================================================\n\n");
-}
+  for (int i = 0; i < arr->length; i++) {
 
-void print_block(bdescr * blk, bool onlyAllocated) {
-  if (onlyAllocated == true && blk->allocated == false) {
-    return;
+    int indexInBlk = i % INTS_PER_BLOCK;
+    
+    int * intBuffer = (int *) currentBlk->start;
+    intBuffer[i] = elems[i];
+
+    // When at the end of a block, follow the link and start using the next point
+    if (indexInBlk == INTS_PER_BLOCK - 1) {
+      currentBlk = currentBlk->link;
+      if (currentBlk == NULL) {
+        printf("Allocated invalid blk!!!\n");
+      }
+    }
   }
-  printf(
-      "start: %d, allocated: %d, link: %d\n",
-      (int) blk->start,
-      blk->allocated,
-      (int) blk->link
-  );
+
 }
